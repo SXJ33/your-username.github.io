@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极速狂飙 - 终极赛车</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        canvas {
+            border: 3px solid #00d4ff;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+            background: #1a1a2e;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00d4ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel h3 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        #menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        #menu h1 {
+            font-size: 60px;
+            background: linear-gradient(45deg, #ff006e, #8338ec, #3a86ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+            text-shadow: 0 0 30px rgba(255, 0, 110, 0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 20px rgba(255, 0, 110, 0.8)); }
+            to { filter: drop-shadow(0 0 40px rgba(131, 56, 236, 0.8)); }
+        }
+
+        .menu-section {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 10px;
+            width: 400px;
+        }
+
+        .menu-section h2 {
+            color: #00d4ff;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .car-grid, .map-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .car-option, .map-option {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #444;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .car-option:hover, .map-option:hover {
+            border-color: #00d4ff;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .car-option.selected, .map-option.selected {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.2);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .car-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .car-stats {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .car-stats div {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+        }
+
+        .bar {
+            width: 60px;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff006e, #8338ec);
+            border-radius: 4px;
+        }
+
+        button {
+            background: linear-gradient(45deg, #ff006e, #8338ec);
+            border: none;
+            color: white;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 0, 110, 0.6);
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 30px;
+            border-radius: 30px;
+            border: 2px solid #00d4ff;
+            display: flex;
+            gap: 30px;
+            font-size: 14px;
+        }
+
+        .control-key {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        #minimap {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00d4ff;
+            border-radius: 10px;
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+
+        #countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+            display: none;
+            z-index: 150;
+        }
+
+        .boost-bar {
+            width: 200px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+            border: 2px solid #ff006e;
+        }
+
+        .boost-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff006e, #ffd700);
+            width: 100%;
+            transition: width 0.1s;
+        }
+
+        .position-indicator {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+        }
+
+        .lap-counter {
+            position: absolute;
+            top: 240px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00d4ff;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .speed-flash {
+            animation: speedFlash 0.2s;
+        }
+
+        @keyframes speedFlash {
+            0%, 100% { box-shadow: 0 0 30px rgba(0, 212, 255, 0.5); }
+            50% { box-shadow: 0 0 60px rgba(255, 0, 110, 0.8); }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="ui" style="display: none;">
+            <div class="panel">
+                <h3>🏁 比赛信息</h3>
+                <div class="stat">
+                    <span>速度:</span>
+                    <span class="stat-value" id="speedDisplay">0 km/h</span>
+                </div>
+                <div class="stat">
+                    <span>名次:</span>
+                    <span class="stat-value" id="positionDisplay">1/8</span>
+                </div>
+                <div class="stat">
+                    <span>圈数:</span>
+                    <span class="stat-value" id="lapDisplay">1/3</span>
+                </div>
+                <div class="stat">
+                    <span>时间:</span>
+                    <span class="stat-value" id="timeDisplay">00:00</span>
+                </div>
+                <div style="margin-top: 10px;">
+                    <div style="color: #ff006e; font-weight: bold;">氮气加速</div>
+                    <div class="boost-bar">
+                        <div class="boost-fill" id="boostFill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lap-counter" id="lapCounter" style="display: none;">
+            <div style="font-size: 24px; color: #00d4ff;">LAP</div>
+            <div style="font-size: 36px; font-weight: bold;" id="lapBig">1/3</div>
+        </div>
+
+        <div id="minimap" style="display: none;">
+            <canvas id="minimapCanvas" width="200" height="200"></canvas>
+        </div>
+
+        <div id="countdown"></div>
+
+        <div id="controls" style="display: none;">
+            <span><span class="control-key">↑</span> 加速</span>
+            <span><span class="control-key">↓</span> 刹车</span>
+            <span><span class="control-key">← →</span> 转向</span>
+            <span><span class="control-key">SPACE</span> 氮气加速</span>
+        </div>
+
+        <div id="menu">
+            <h1>🏎️ 极速狂飙</h1>
+            
+            <div class="menu-section">
+                <h2>选择赛车</h2>
+                <div class="car-grid" id="carGrid"></div>
+            </div>
+
+            <div class="menu-section">
+                <h2>选择赛道</h2>
+                <div class="map-grid" id="mapGrid"></div>
+            </div>
+
+            <button onclick="startGame()">开始比赛</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const minimapCanvas = document.getElementById('minimapCanvas');
+        const minimapCtx = minimapCanvas.getContext('2d');
+
+        // 设置画布大小
+        function resizeCanvas() {
+            canvas.width = window.innerWidth - 40;
+            canvas.height = window.innerHeight - 40;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // 游戏状态
+        let gameState = 'menu';
+        let selectedCar = 0;
+        let selectedMap = 0;
+        let raceTime = 0;
+        let currentLap = 1;
+        let totalLaps = 3;
+
+        // 赛车类型定义
+        const carTypes = [
+            {
+                name: '闪电跑车',
+                emoji: '🏎️',
+                color: '#ff006e',
+                maxSpeed: 15,
+                acceleration: 0.4,
+                handling: 0.92,
+                boost: 100,
+                desc: '极速型'
+            },
+            {
+                name: '越野怪兽',
+                emoji: '🚙',
+                color: '#8338ec',
+                maxSpeed: 12,
+                acceleration: 0.3,
+                handling: 0.85,
+                boost: 120,
+                offroad: true,
+                desc: '越野型'
+            },
+            {
+                name: '平衡战车',
+                emoji: '🚗',
+                color: '#3a86ff',
+                maxSpeed: 13,
+                acceleration: 0.35,
+                handling: 0.88,
+                boost: 100,
+                desc: '均衡型'
+            },
+            {
+                name: '漂移之王',
+                emoji: '🏍️',
+                color: '#ffbe0b',
+                maxSpeed: 14,
+                acceleration: 0.38,
+                handling: 0.95,
+                boost: 80,
+                drift: true,
+                desc: '技巧型'
+            }
+        ];
+
+        // 地图定义
+        const maps = [
+            {
+                name: '城市霓虹',
+                emoji: '🌃',
+                bgColor: '#0a0a0a',
+                roadColor: '#2a2a2a',
+                lineColor: '#00d4ff',
+                width: 3000,
+                height: 2000,
+                checkpoints: [],
+                obstacles: []
+            },
+            {
+                name: '沙漠风暴',
+                emoji: '🏜️',
+                bgColor: '#c2b280',
+                roadColor: '#8b7355',
+                lineColor: '#ff6b35',
+                width: 3500,
+                height: 2500,
+                sand: true,
+                obstacles: []
+            },
+            {
+                name: '冰雪极地',
+                emoji: '❄️',
+                bgColor: '#e0f4f8',
+                roadColor: '#b0d4e8',
+                lineColor: '#ffffff',
+                width: 2800,
+                height: 2200,
+                ice: true,
+                obstacles: []
+            },
+            {
+                name: '火山地狱',
+                emoji: '🌋',
+                bgColor: '#2d1810',
+                roadColor: '#4a2c17',
+                lineColor: '#ff4500',
+                width: 3200,
+                height: 2400,
+                lava: true,
+                obstacles: []
+            }
+        ];
+
+        // 生成赛道
+        function generateTrack(mapIndex) {
+            const map = maps[mapIndex];
+            const points = [];
+            const numPoints = 12;
+            const centerX = map.width / 2;
+            const centerY = map.height / 2;
+            const radiusX = map.width * 0.35;
+            const radiusY = map.height * 0.35;
+
+            for (let i = 0; i < numPoints; i++) {
+                const angle = (i / numPoints) * Math.PI * 2;
+                const variation = 0.8 + Math.random() * 0.4;
+                points.push({
+                    x: centerX + Math.cos(angle) * radiusX * variation,
+                    y: centerY + Math.sin(angle) * radiusY * variation
+                });
+            }
+
+            // 生成检查点
+            map.checkpoints = [];
+            for (let i = 0; i < points.length; i++) {
+                const p1 = points[i];
+                const p2 = points[(i + 1) % points.length];
+                map.checkpoints.push({
+                    x1: p1.x, y1: p1.y,
+                    x2: p2.x, y2: p2.y,
+                    passed: false
+                });
+            }
+
+            // 生成障碍物
+            map.obstacles = [];
+            for (let i = 0; i < 15; i++) {
+                map.obstacles.push({
+                    x: Math.random() * map.width,
+                    y: Math.random() * map.height,
+                    width: 40 + Math.random() * 60,
+                    height: 40 + Math.random() * 60,
+                    type: Math.random() > 0.5 ? 'rock' : 'barrier'
+                });
+            }
+
+            return points;
+        }
+
+        // 车辆类
+        class Car {
+            constructor(type, isPlayer = false) {
+                this.type = carTypes[type];
+                this.x = 0;
+                this.y = 0;
+                this.angle = 0;
+                this.speed = 0;
+                this.maxSpeed = this.type.maxSpeed;
+                this.acceleration = this.type.acceleration;
+                this.handling = this.type.handling;
+                this.boost = this.type.boost;
+                this.maxBoost = this.type.boost;
+                this.isPlayer = isPlayer;
+                this.width = 30;
+                this.height = 50;
+                this.lap = 1;
+                this.checkpoint = 0;
+                this.finished = false;
+                this.finishTime = 0;
+                this.drifting = false;
+                this.particles = [];
+            }
+
+            update(keys, trackPoints, map) {
+                if (this.finished) return;
+
+                // AI控制
+                if (!this.isPlayer) {
+                    this.aiControl(trackPoints, map);
+                } else {
+                    this.playerControl(keys);
+                }
+
+                // 物理更新
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+
+                // 摩擦力
+                let friction = 0.98;
+                if (map.ice && !this.type.offroad) friction = 0.95;
+                if (map.sand && !this.type.offroad) friction = 0.96;
+                this.speed *= friction;
+
+                // 边界检查
+                this.x = Math.max(50, Math.min(map.width - 50, this.x));
+                this.y = Math.max(50, Math.min(map.height - 50, this.y));
+
+                // 检查点检测
+                this.checkCheckpoints(map);
+
+                // 粒子效果
+                if (Math.abs(this.speed) > 2) {
+                    this.addParticle();
+                }
+                this.updateParticles();
+
+                // 氮气恢复
+                if (this.boost < this.maxBoost) {
+                    this.boost += 0.1;
+                }
+            }
+
+            playerControl(keys) {
+                // 加速/刹车
+                if (keys['ArrowUp']) {
+                    this.speed += this.acceleration;
+                } else if (keys['ArrowDown']) {
+                    this.speed -= this.acceleration * 1.5;
+                }
+
+                // 转向
+                if (Math.abs(this.speed) > 0.5) {
+                    const turnSpeed = this.handling * (this.speed / this.maxSpeed) * 0.15;
+                    if (keys['ArrowLeft']) {
+                        this.angle -= turnSpeed;
+                    }
+                    if (keys['ArrowRight']) {
+                        this.angle += turnSpeed;
+                    }
+                }
+
+                // 氮气加速
+                if (keys[' '] && this.boost > 0) {
+                    this.speed += 0.8;
+                    this.boost -= 2;
+                    this.addBoostParticle();
+                }
+
+                // 限制最大速度
+                this.speed = Math.max(-this.maxSpeed / 2, Math.min(this.maxSpeed, this.speed));
+            }
+
+            aiControl(trackPoints, map) {
+                const target = trackPoints[this.checkpoint % trackPoints.length];
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                const targetAngle = Math.atan2(dy, dx);
+                
+                let angleDiff = targetAngle - this.angle;
+                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+                // 平滑转向
+                if (angleDiff > 0.1) {
+                    this.angle += this.handling * 0.08;
+                } else if (angleDiff < -0.1) {
+                    this.angle -= this.handling * 0.08;
+                }
+
+                // 加速
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 100) {
+                    this.speed += this.acceleration * 0.8;
+                } else {
+                    this.checkpoint++;
+                }
+
+                // AI使用氮气
+                if (this.boost > 30 && Math.random() > 0.95) {
+                    this.speed += 0.5;
+                    this.boost -= 1;
+                }
+
+                this.speed = Math.min(this.maxSpeed * (0.9 + Math.random() * 0.2), this.speed);
+            }
+
+            checkCheckpoints(map) {
+                const cp = map.checkpoints[this.checkpoint % map.checkpoints.length];
+                const dist = this.distanceToLine(cp.x1, cp.y1, cp.x2, cp.y2);
+                
+                if (dist < 100 && !cp.passed) {
+                    this.checkpoint++;
+                    if (this.checkpoint >= map.checkpoints.length) {
+                        this.checkpoint = 0;
+                        this.lap++;
+                        if (this.lap > totalLaps) {
+                            this.finished = true;
+                            this.finishTime = raceTime;
+                        }
+                    }
+                }
+            }
+
+            distanceToLine(x1, y1, x2, y2) {
+                const A = x2 - x1;
+                const B = y2 - y1;
+                const C = x1 - this.x;
+                const D = y1 - this.y;
+                const dot = A * C + B * D;
+                const lenSq = A * A + B * B;
+                let param = -1;
+                if (lenSq !== 0) param = dot / lenSq;
+                let xx, yy;
+                if (param < 0) {
+                    xx = x1;
+                    yy = y1;
+                } else if (param > 1) {
+                    xx = x2;
+                    yy = y2;
+                } else {
+                    xx = x1 + param * A;
+                    yy = y1 + param * B;
+                }
+                const dx = this.x - xx;
+                const dy = this.y - yy;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            addParticle() {
+                if (Math.random() > 0.7) return;
+                this.particles.push({
+                    x: this.x - Math.cos(this.angle) * 20,
+                    y: this.y - Math.sin(this.angle) * 20,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    life: 1,
+                    color: this.type.drift && Math.abs(this.speed) > 10 ? '#ff6600' : '#888'
+                });
+            }
+
+            addBoostParticle() {
+                for (let i = 0; i < 3; i++) {
+                    this.particles.push({
+                        x: this.x - Math.cos(this.angle) * 25,
+                        y: this.y - Math.sin(this.angle) * 25,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: (Math.random() - 0.5) * 4,
+                        life: 1,
+                        color: '#00d4ff',
+                        size: 4
+                    });
+                }
+            }
+
+            updateParticles() {
+                this.particles = this.particles.filter(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.05;
+                    return p.life > 0;
+                });
+            }
+
+            draw(ctx, cameraX, cameraY) {
+                const screenX = this.x - cameraX + canvas.width / 2;
+                const screenY = this.y - cameraY + canvas.height / 2;
+
+                // 绘制粒子
+                this.particles.forEach(p => {
+                    ctx.globalAlpha = p.life;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x - cameraX + canvas.width / 2, p.y - cameraY + canvas.height / 2, p.size || 3, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.globalAlpha = 1;
+
+                ctx.save();
+                ctx.translate(screenX, screenY);
+                ctx.rotate(this.angle);
+
+                // 车身阴影
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(-this.width/2 + 3, -this.height/2 + 3, this.width, this.height);
+
+                // 车身
+                ctx.fillStyle = this.type.color;
+                ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+
+                // 车顶
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(-this.width/3, -this.height/4, this.width/1.5, this.height/2);
+
+                // 车灯
+                ctx.fillStyle = '#ffff00';
+                ctx.fillRect(-this.width/2 + 2, -this.height/2 + 2, 8, 4);
+                ctx.fillRect(this.width/2 - 10, -this.height/2 + 2, 8, 4);
+
+                // 尾灯
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(-this.width/2 + 2, this.height/2 - 6, 8, 4);
+                ctx.fillRect(this.width/2 - 10, this.height/2 - 6, 8, 4);
+
+                // 氮气特效
+                if (this.boost < this.maxBoost - 5) {
+                    ctx.fillStyle = '#00d4ff';
+                    ctx.globalAlpha = 0.8;
+                    ctx.fillRect(-5, this.height/2, 10, 15);
+                    ctx.globalAlpha = 1;
+                }
+
+                ctx.restore();
+
+                // 绘制表情
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.type.emoji, screenX, screenY - 30);
+
+                // 玩家标识
+                if (this.isPlayer) {
+                    ctx.strokeStyle = '#00d4ff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, 35, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
+            drawMinimap(ctx, scaleX, scaleY) {
+                const x = this.x * scaleX;
+                const y = this.y * scaleY;
+                
+                ctx.fillStyle = this.isPlayer ? '#00d4ff' : this.type.color;
+                ctx.beginPath();
+                ctx.arc(x, y, this.isPlayer ? 6 : 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 方向指示
+                if (this.isPlayer) {
+                    ctx.strokeStyle = '#00d4ff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + Math.cos(this.angle) * 10, y + Math.sin(this.angle) * 10);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // 游戏变量
+        let player;
+        let opponents = [];
+        let trackPoints = [];
+        let keys = {};
+        let camera = { x: 0, y: 0 };
+        let particles = [];
+
+        // 初始化菜单
+        function initMenu() {
+            const carGrid = document.getElementById('carGrid');
+            carTypes.forEach((car, index) => {
+                const div = document.createElement('div');
+                div.className = 'car-option' + (index === 0 ? ' selected' : '');
+                div.innerHTML = `
+                    <div class="car-icon">${car.emoji}</div>
+                    <div style="font-weight: bold; margin: 5px 0;">${car.name}</div>
+                    <div class="car-stats">
+                        <div>速度 <div class="bar"><div class="bar-fill" style="width: ${car.maxSpeed * 6}%"></div></div></div>
+                        <div>加速 <div class="bar"><div class="bar-fill" style="width: ${car.acceleration * 200}%"></div></div></div>
+                        <div>操控 <div class="bar"><div class="bar-fill" style="width: ${car.handling * 100}%"></div></div></div>
+                    </div>
+                    <div style="color: #ffd700; font-size: 12px; margin-top: 5px;">${car.desc}</div>
+                `;
+                div.onclick = () => selectCar(index);
+                carGrid.appendChild(div);
+            });
+
+            const mapGrid = document.getElementById('mapGrid');
+            maps.forEach((map, index) => {
+                const div = document.createElement('div');
+                div.className = 'map-option' + (index === 0 ? ' selected' : '');
+                div.innerHTML = `
+                    <div style="font-size: 40px; margin-bottom: 10px;">${map.emoji}</div>
+                    <div style="font-weight: bold;">${map.name}</div>
+                    <div style="font-size: 12px; color: #888; margin-top: 5px;">
+                        ${map.ice ? '❄️ 冰雪路面' : ''}
+                        ${map.sand ? '🏜️ 沙漠地形' : ''}
+                        ${map.lava ? '🔥 火山赛道' : ''}
+                        ${!map.ice && !map.sand && !map.lava ? '🌃 标准赛道' : ''}
+                    </div>
+                `;
+                div.onclick = () => selectMap(index);
+                mapGrid.appendChild(div);
+            });
+        }
+
+        function selectCar(index) {
+            selectedCar = index;
+            document.querySelectorAll('.car-option').forEach((el, i) => {
+                el.classList.toggle('selected', i === index);
+            });
+        }
+
+        function selectMap(index) {
+            selectedMap = index;
+            document.querySelectorAll('.map-option').forEach((el, i) => {
+                el.classList.toggle('selected', i === index);
+            });
+        }
+
+        function startGame() {
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('ui').style.display = 'block';
+            document.getElementById('minimap').style.display = 'block';
+            document.getElementById('controls').style.display = 'flex';
+            document.getElementById('lapCounter').style.display = 'block';
+
+            // 初始化游戏
+            trackPoints = generateTrack(selectedMap);
+            
+            // 创建玩家
+            player = new Car(selectedCar, true);
+            player.x = trackPoints[0].x;
+            player.y = trackPoints[0].y;
+
+            // 创建对手
+            opponents = [];
+            for (let i = 0; i < 7; i++) {
+                const opponent = new Car(Math.floor(Math.random() * carTypes.length));
+                opponent.x = trackPoints[0].x + (Math.random() - 0.5) * 200;
+                opponent.y = trackPoints[0].y + (Math.random() - 0.5) * 200;
+                opponent.angle = Math.random() * Math.PI * 2;
+                opponents.push(opponent);
+            }
+
+            // 倒计时
+            let count = 3;
+            const countdownEl = document.getElementById('countdown');
+            countdownEl.style.display = 'block';
+            
+            const countdownInterval = setInterval(() => {
+                if (count > 0) {
+                    countdownEl.textContent = count;
+                    count--;
+                } else {
+                    countdownEl.textContent = 'GO!';
+                    setTimeout(() => {
+                        countdownEl.style.display = 'none';
+                        gameState = 'racing';
+                    }, 500);
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+
+            gameLoop();
+        }
+
+        // 游戏主循环
+        function gameLoop() {
+            if (gameState === 'racing') {
+                raceTime += 1/60;
+                
+                // 更新玩家
+                player.update(keys, trackPoints, maps[selectedMap]);
+                
+                // 更新对手
+                opponents.forEach(opponent => {
+                    opponent.update({}, trackPoints, maps[selectedMap]);
+                });
+
+                // 更新相机跟随玩家
+                camera.x += (player.x - camera.x) * 0.1;
+                camera.y += (player.y - camera.y) * 0.1;
+
+                // 计算名次
+                const allCars = [player, ...opponents];
+                allCars.sort((a, b) => {
+                    if (a.lap !== b.lap) return b.lap - a.lap;
+                    return b.checkpoint - a.checkpoint;
+                });
+                const position = allCars.indexOf(player) + 1;
+
+                // 更新UI
+                document.getElementById('speedDisplay').textContent = Math.abs(Math.round(player.speed * 10)) + ' km/h';
+                document.getElementById('positionDisplay').textContent = position + '/8';
+                document.getElementById('lapDisplay').textContent = Math.min(player.lap, totalLaps) + '/' + totalLaps;
+                document.getElementById('lapBig').textContent = Math.min(player.lap, totalLaps) + '/' + totalLaps;
+                document.getElementById('timeDisplay').textContent = formatTime(raceTime);
+                document.getElementById('boostFill').style.width = (player.boost / player.maxBoost * 100) + '%';
+
+                // 检查比赛结束
+                if (player.finished) {
+                    gameState = 'finished';
+                    showResults(position);
+                }
+            }
+
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function render() {
+            const map = maps[selectedMap];
+            
+            // 清空画布
+            ctx.fillStyle = map.bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制网格背景
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            const gridSize = 100;
+            const offsetX = -camera.x % gridSize;
+            const offsetY = -camera.y % gridSize;
+            
+            for (let x = offsetX; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = offsetY; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            ctx.save();
+            ctx.translate(-camera.x + canvas.width / 2, -camera.y + canvas.height / 2);
+
+            // 绘制赛道
+            drawTrack(map);
+
+            // 绘制障碍物
+            map.obstacles.forEach(obs => {
+                ctx.fillStyle = obs.type === 'rock' ? '#666' : '#ff6600';
+                ctx.fillRect(obs.x - obs.width/2, obs.y - obs.height/2, obs.width, obs.height);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(obs.x - obs.width/2, obs.y - obs.height/2, obs.width, obs.height);
+            });
+
+            // 绘制车辆（按Y坐标排序实现遮挡）
+            const allCars = [player, ...opponents];
+            allCars.sort((a, b) => a.y - b.y);
+            allCars.forEach(car => car.draw(ctx, camera.x, camera.y));
+
+            ctx.restore();
+
+            // 绘制小地图
+            drawMinimap(map);
+        }
+
+        function drawTrack(map) {
+            // 绘制赛道主体
+            ctx.strokeStyle = map.roadColor;
+            ctx.lineWidth = 120;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            ctx.beginPath();
+            trackPoints.forEach((p, i) => {
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            });
+            ctx.closePath();
+            ctx.stroke();
+
+            // 绘制赛道边缘线
+            ctx.strokeStyle = map.lineColor;
+            ctx.lineWidth = 5;
+            ctx.setLineDash([20, 20]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 绘制赛道边界
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            trackPoints.forEach((p, i) => {
+                const prev = trackPoints[(i - 1 + trackPoints.length) % trackPoints.length];
+                const next = trackPoints[(i + 1) % trackPoints.length];
+                const angle1 = Math.atan2(p.y - prev.y, p.x - prev.x);
+                const angle2 = Math.atan2(next.y - p.y, next.x - p.x);
+                const avgAngle = (angle1 + angle2) / 2;
+                const perp = avgAngle + Math.PI / 2;
+                
+                const offsetX = Math.cos(perp) * 60;
+                const offsetY = Math.sin(perp) * 60;
+                
+                if (i === 0) ctx.moveTo(p.x + offsetX, p.y + offsetY);
+                else ctx.lineTo(p.x + offsetX, p.y + offsetY);
+            });
+            ctx.closePath();
+            ctx.stroke();
+
+            ctx.beginPath();
+            trackPoints.forEach((p, i) => {
+                const prev = trackPoints[(i - 1 + trackPoints.length) % trackPoints.length];
+                const next = trackPoints[(i + 1) % trackPoints.length];
+                const angle1 = Math.atan2(p.y - prev.y, p.x - prev.x);
+                const angle2 = Math.atan2(next.y - p.y, next.x - p.x);
+                const avgAngle = (angle1 + angle2) / 2;
+                const perp = avgAngle - Math.PI / 2;
+                
+                const offsetX = Math.cos(perp) * 60;
+                const offsetY = Math.sin(perp) * 60;
+                
+                if (i === 0) ctx.moveTo(p.x + offsetX, p.y + offsetY);
+                else ctx.lineTo(p.x + offsetX, p.y + offsetY);
+            });
+            ctx.closePath();
+            ctx.stroke();
+
+            // 起点/终点线
+            const start = trackPoints[0];
+            const next = trackPoints[1];
+            const angle = Math.atan2(next.y - start.y, next.x - start.x);
+            const perp = angle + Math.PI / 2;
+            
+            ctx.save();
+            ctx.translate(start.x, start.y);
+            ctx.rotate(perp);
+            
+            // 方格旗图案
+            const squareSize = 15;
+            for (let i = -4; i < 4; i++) {
+                for (let j = 0; j < 2; j++) {
+                    ctx.fillStyle = (i + j) % 2 === 0 ? '#fff' : '#000';
+                    ctx.fillRect(i * squareSize, j * squareSize - 60, squareSize, squareSize);
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawMinimap(map) {
+            minimapCtx.fillStyle = map.bgColor;
+            minimapCtx.fillRect(0, 0, 200, 200);
+            
+            const scaleX = 200 / map.width;
+            const scaleY = 200 / map.height;
+
+            // 绘制赛道
+            minimapCtx.strokeStyle = map.roadColor;
+            minimapCtx.lineWidth = 8;
+            minimapCtx.beginPath();
+            trackPoints.forEach((p, i) => {
+                if (i === 0) minimapCtx.moveTo(p.x * scaleX, p.y * scaleY);
+                else minimapCtx.lineTo(p.x * scaleX, p.y * scaleY);
+            });
+            minimapCtx.closePath();
+            minimapCtx.stroke();
+
+            // 绘制车辆
+            player.drawMinimap(minimapCtx, scaleX, scaleY);
+            opponents.forEach(op => op.drawMinimap(minimapCtx, scaleX, scaleY));
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            const ms = Math.floor((seconds % 1) * 100);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function showResults(position) {
+            const resultDiv = document.createElement('div');
+            resultDiv.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0,0,0,0.95);
+                border: 3px solid #ffd700;
+                border-radius: 20px;
+                padding: 40px;
+                text-align: center;
+                z-index: 300;
+            `;
+            
+            const medals = ['🥇', '🥈', '🥉'];
+            const medal = position <= 3 ? medals[position - 1] : '🏁';
+            
+            resultDiv.innerHTML = `
+                <div style="font-size: 80px; margin-bottom: 20px;">${medal}</div>
+                <h2 style="color: #ffd700; font-size: 36px; margin-bottom: 20px;">
+                    ${position === 1 ? '冠军！' : position === 2 ? '亚军！' : position === 3 ? '季军！' : '第' + position + '名'}
+                </h2>
+                <p style="color: #fff; font-size: 20px; margin-bottom: 10px;">
+                    完成时间: ${formatTime(player.finishTime)}
+                </p>
+                <p style="color: #888; margin-bottom: 30px;">
+                    使用车辆: ${player.type.name}
+                </p>
+                <button onclick="location.reload()" style="margin-top: 0;">再来一局</button>
+            `;
+            
+            document.body.appendChild(resultDiv);
+        }
+
+        // 键盘控制
+        window.addEventListener('keydown', e => {
+            keys[e.key] = true;
+            if (e.key === ' ' && gameState === 'racing') {
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keyup', e => {
+            keys[e.key] = false;
+        });
+
+        // 初始化
+        initMenu();
+    </script>
+</body>
+</html>
